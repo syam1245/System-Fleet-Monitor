@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import io from 'socket.io-client';
 import {
   Server, ShieldAlert, Cpu, HardDrive,
   Activity, Thermometer, Battery, Wifi
@@ -12,6 +13,51 @@ function App() {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [telemetry, setTelemetry] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const socketRef = useRef();
+
+  // Initialize WebSockets for real-time live data streaming
+  useEffect(() => {
+    socketRef.current = io('http://localhost:5000');
+
+    socketRef.current.on('telemetryUpdate', (payload) => {
+      const { device, telemetry } = payload;
+
+      // Update device list Last Seen status dynamically
+      setDevices(prevDevices => {
+        const existing = prevDevices.find(d => d.deviceId === device.deviceId);
+        if (existing) {
+          return prevDevices.map(d => d.deviceId === device.deviceId ? { ...d, lastSeen: Date.now() } : d);
+        } else {
+          // New device joined the fleet!
+          return [{ ...device, lastSeen: Date.now() }, ...prevDevices];
+        }
+      });
+
+      // If this telemetry update belongs to the CURRENTLY selected device, append it to the chart directly!
+      setSelectedDevice(currSelected => {
+        if (currSelected && currSelected.deviceId === device.deviceId) {
+          const d = telemetry;
+          const newPoint = {
+            time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            temp: d.measurements.cpuTempAvg || 45,
+            ram: d.measurements.ramUsagePct,
+            ping: d.measurements.pingLatencyMs || 0
+          };
+
+          setTelemetry(prevChartData => {
+            const updated = [...prevChartData, newPoint];
+            if (updated.length > 20) return updated.slice(updated.length - 20);
+            return updated;
+          });
+        }
+        return currSelected;
+      });
+
+    });
+
+    return () => socketRef.current.disconnect();
+  }, []);
 
   // Fetch all devices on load
   useEffect(() => {

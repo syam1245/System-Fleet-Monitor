@@ -44,6 +44,15 @@ router.post('/', agentAuth, async (req, res) => {
 
         await telemetry.save();
 
+        // 3. Emit Real-time Update via Socket.io
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('telemetryUpdate', {
+                device: deviceData,
+                telemetry: telemetry
+            });
+        }
+
         res.status(201).json({ message: 'Telemetry logged successfully' });
     } catch (error) {
         console.error('Error ingesting telemetry:', error);
