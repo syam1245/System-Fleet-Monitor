@@ -51,8 +51,11 @@ npm run dev
 # The Dashboard will run at http://localhost:5173/
 ```
 
-### 3. Agent Subsystem
-The agent requires a Python virtual environment to install OS-level sensor libraries safely.
+### 3. Agent Subsystem & Deployment
+The locally installed Python agent daemon extracts OS-level hardware sensors. You can run it raw in a `.venv` or compile it into a hidden binary executable (`.exe`).
+
+#### Option A: Running the raw Python script
+
 ```bash
 cd agent
 python -m venv venv
@@ -64,18 +67,29 @@ venv\Scripts\activate
 
 pip install -r requirements.txt
 
-# To run the actual agent monitoring your local machine:
+# Run the agent monitoring your local machine:
 python agent.py
 
-# To run the Fleet Simulator (generates 5 fake machines pushing traffic):
+# Run the Fleet Simulator (generates 5 fake machines pushing traffic):
 python mock_fleet.py
 ```
+
+#### Option B: Compiling a Standalone Hidden `.EXE`
+
+Instead of deploying full Python environments to thousands of end-users' computers, compile the agent into a single binary.
+
+```bash
+cd agent
+# Run the automated build batch script
+.\build.bat
+```
+This drops a hidden, dependency-bundled binary called `SystemFleetAgent.exe` into the `agent/dist/` folder. This file can be deployed silently via Windows GPO or Microsoft Intune.
 
 ---
 
 ## Future Roadmap 🗺️
-- [ ] Implement Socket.io to push real-time alerting events to the React UI instantly.
-- [ ] Add PyInstaller scripts to compile the `agent.py` into a silent, hidden `.exe` for deployment via Group Policy.
+- [x] Implement Socket.io to push real-time alerting events to the React UI instantly.
+- [x] Add PyInstaller scripts to compile the `agent.py` into a silent, hidden `.exe` for deployment via Group Policy.
 - [ ] Add an Admin Authentication layer (JWT) to secure the React dashboard.
 - [ ] Integrate a Rules Engine to automatically flag batteries with <40% design capacity.
 
